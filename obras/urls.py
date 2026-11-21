@@ -14,6 +14,8 @@ from .views import (
     PresupuestoDetailAPIView
 )
 
+from core.views_lookups import ClientesLookupAPIView
+
 app_name = 'obras'
 
 urlpatterns = [
@@ -28,4 +30,5 @@ urlpatterns = [
     path('contactos-cliente/', ContactoClienteListCreateAPIView.as_view(), name='contacto_cliente_list_create'),
     path('contactos-cliente/<int:pk>/', ContactoClienteDetailAPIView.as_view(), name='contacto_cliente_detail'),
     path('presupuestos/<int:pk>/', PresupuestoDetailAPIView.as_view(), name='presupuesto_detail'),
+    path('lookups/clientes/', ClientesLookupAPIView.as_view(), name='lookup_clientes'),
 ]

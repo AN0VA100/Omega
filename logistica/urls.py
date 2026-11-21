@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import ArticuloListCreateAPIView, ArticuloDetailAPIView, CardexListCreateAPIView
-
+from core.views_lookups import ArticulosActivosLookupAPIView
 app_name = 'logistica'
 
 urlpatterns = [
@@ -10,4 +10,5 @@ urlpatterns = [
     
     # Movimientos del Cardex (Endpoint de solo Inserción y Lectura, Inmutable)
     path('cardex/', CardexListCreateAPIView.as_view(), name='cardex_list_create'),
+    path('lookups/articulos-activos/', ArticulosActivosLookupAPIView.as_view(), name='lookup_articulos'),
 ]

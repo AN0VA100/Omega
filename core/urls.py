@@ -5,7 +5,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .models import Rol
 from .permissions import IsAdminOAdministracion
 from .serializers import RolSerializer
-
+from .views_lookups import TecnicosLookupAPIView
 from .views import CustomTokenObtainPairView, UsuarioDetailAPIView, UsuarioListCreateAPIView
 
 """
@@ -20,4 +20,5 @@ urlpatterns = [
     path('usuarios/', UsuarioListCreateAPIView.as_view(), name='usuario_list_create'),
     path('usuarios/<int:id_usuario>/', UsuarioDetailAPIView.as_view(), name='usuario_detail'),
     path('roles/', generics.ListAPIView.as_view(queryset=Rol.objects.all(), serializer_class=RolSerializer, permission_classes=[IsAdminOAdministracion]),name='rol_list'),
+    path('lookups/tecnicos/', TecnicosLookupAPIView.as_view(), name='lookup_tecnicos'),
 ]
