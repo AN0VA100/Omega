@@ -4,13 +4,13 @@ Vistas de Obras, Presupuestos y Terreno. Incluye la Máquina de Estados de FYAG.
 from rest_framework import generics, status
 from rest_framework.response import Response
 
-from .models import ClienteMandante, Presupuesto, Obra, HojaServicio, HorasTrabajadas
+from .models import ClienteMandante, Presupuesto, Obra, HojaServicio, HorasTrabajadas, ContactoCliente
 from .serializers import (
     ClienteMandanteSerializer, PresupuestoSerializer, ObraSerializer,
-    HojaServicioSerializer, HorasTrabajadasSerializer
+    HojaServicioSerializer, HorasTrabajadasSerializer, ContactoClienteSerializer
 )
-from .permissions import CanAccessFinanzasObra, CanManageObras, CanManageTerreno
-from core.models import Rol
+from .permissions import CanAccessFinanzasObra, CanManageObras, CanManageTerreno, CanAccessFinanzasObra
+from core.models import Rol, LogAuditoria
 from logistica.models import Cardex
 
 
@@ -101,3 +101,63 @@ class HorasTrabajadasListCreateAPIView(generics.ListCreateAPIView):
     queryset = HorasTrabajadas.objects.all().order_by('-id')
     serializer_class = HorasTrabajadasSerializer
     permission_classes = [CanManageTerreno]
+
+
+class ContactoClienteListCreateAPIView(generics.ListCreateAPIView):
+    """
+    GET: Lista contactos (filtrables por ?id_cliente=X).
+    POST: Crea nuevo contacto.
+    Bloqueado para Técnicos.
+    """
+    serializer_class = ContactoClienteSerializer
+    permission_classes = [CanAccessFinanzasObra]
+
+    def get_queryset(self):
+        queryset = ContactoCliente.objects.all().order_by('id')
+        id_cliente = self.request.query_params.get('id_cliente')
+        if id_cliente:
+            queryset = queryset.filter(id_cliente=id_cliente)
+        return queryset
+
+
+class ContactoClienteDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """GET, PUT, PATCH, DELETE para un ContactoCliente específico."""
+    queryset = ContactoCliente.objects.all()
+    serializer_class = ContactoClienteSerializer
+    permission_classes = [CanAccessFinanzasObra]
+
+
+class PresupuestoDetailAPIView(generics.RetrieveUpdateAPIView):
+    """
+    GET, PUT, PATCH para modificar el estado y monto del presupuesto.
+    Audita cambios de estado en core.models.LogAuditoria.
+    """
+    queryset = Presupuesto.objects.all()
+    serializer_class = PresupuestoSerializer
+    permission_classes = [CanAccessFinanzasObra]
+
+    def perform_update(self, serializer):
+        instancia_previa = self.get_object()
+        estado_anterior = instancia_previa.estado
+        
+        # Validar regla de negocio de estados
+        nuevo_estado = serializer.validated_data.get('estado', estado_anterior)
+        if estado_anterior == Presupuesto.ESTADO_APROBADO and nuevo_estado == Presupuesto.ESTADO_PENDIENTE:
+            raise ValidationError(
+                {"estado": "Un presupuesto 'Aprobado' no puede retroceder al estado 'Pendiente'."}
+            )
+
+        presupuesto_actualizado = serializer.save()
+
+        # Si el estado cambió, generar traza de auditoría
+        if estado_anterior != nuevo_estado:
+            LogAuditoria.objects.create(
+                usuario=self.request.user,
+                tabla_afectada='obras_presupuesto',
+                tipo_operacion=LogAuditoria.OP_UPDATE,
+                valor_anterior={'estado': estado_anterior},
+                valor_nuevo={
+                    'estado': nuevo_estado,
+                    'monto_total': presupuesto_actualizado.monto_total
+                }
+            )

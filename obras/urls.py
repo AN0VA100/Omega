@@ -8,7 +8,10 @@ from .views import (
     ObraListCreateAPIView,
     ObraDetailAPIView,
     HojaServicioListCreateAPIView,
-    HorasTrabajadasListCreateAPIView
+    HorasTrabajadasListCreateAPIView,
+    ContactoClienteListCreateAPIView, 
+    ContactoClienteDetailAPIView,
+    PresupuestoDetailAPIView
 )
 
 app_name = 'obras'
@@ -22,4 +25,7 @@ urlpatterns = [
     
     path('hojas-servicio/', HojaServicioListCreateAPIView.as_view(), name='hojas_servicio_list_create'),
     path('horas-trabajadas/', HorasTrabajadasListCreateAPIView.as_view(), name='horas_trabajadas_list_create'),
+    path('contactos-cliente/', ContactoClienteListCreateAPIView.as_view(), name='contacto_cliente_list_create'),
+    path('contactos-cliente/<int:pk>/', ContactoClienteDetailAPIView.as_view(), name='contacto_cliente_detail'),
+    path('presupuestos/<int:pk>/', PresupuestoDetailAPIView.as_view(), name='presupuesto_detail'),
 ]

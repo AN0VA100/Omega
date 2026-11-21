@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "logistica",
     "compras",
     "obras",
+    "reportes",
 ]
 
 MIDDLEWARE = [
@@ -68,14 +69,15 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': False,
-    'UPDATE_LAST_LOGIN': True,
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Token corto para control de inactividad
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # Renovación máxima diaria
+    'ROTATE_REFRESH_TOKENS': True,                   # Obliga a rotar el token en cada refresh
+    'BLACKLIST_AFTER_ROTATION': True,                # Invalida inmediatamente el token anterior
+    'UPDATE_LAST_LOGIN': False,
     'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id_usuario',
+    'USER_ID_FIELD': 'id_usuario',                   # Mapeo exacto con tu modelo core.Usuario
     'USER_ID_CLAIM': 'user_id',
 }
 

@@ -1,6 +1,7 @@
 """
 Serializadores explícitos para el módulo Obras.
 """
+import re
 from rest_framework import serializers
 from .models import (
     ClienteMandante, ContactoCliente, Presupuesto,
@@ -8,7 +9,20 @@ from .models import (
 )
 
 
+def validar_rut_chileno(value: str) -> str:
+
+    if not re.match(r'^\d{7,8}-[kK0-9]$', value):
+    
+        raise serializers.ValidationError("Formato de RUT inválido. Utilice el formato 12345678-9.")
+    
+    return value
+
+
+
 class ContactoClienteSerializer(serializers.ModelSerializer):
+
+    rut = serializers.CharField(max_length=12, validators=[validar_rut_chileno])
+
     class Meta:
         model = ContactoCliente
         fields = ['id', 'id_cliente', 'nombre', 'rut', 'cargo', 'email', 'telefono']
@@ -26,6 +40,7 @@ class PresupuestoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Presupuesto
         fields = ['id', 'id_cliente', 'estado', 'monto_total']
+        read_only_fields = ['id']
 
 
 class HojaServicioSerializer(serializers.ModelSerializer):
