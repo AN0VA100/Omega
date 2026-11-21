@@ -25,8 +25,12 @@ class ContactoProveedorListCreateAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = ContactoProveedor.objects.all().order_by('id')
         id_proveedor = self.request.query_params.get('id_proveedor')
-        if id_proveedor:
-            queryset = queryset.filter(id_proveedor=id_proveedor)
+        if id_proveedor is not None:
+            if not id_proveedor.isdigit():
+                raise ValidationError(
+                    {"id_proveedor": "El parámetro id_proveedor debe ser un entero positivo."}
+                )
+            queryset = queryset.filter(id_proveedor=int(id_proveedor))
         return queryset
 
 

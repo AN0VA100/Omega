@@ -37,12 +37,13 @@ class CardexSerializer(serializers.ModelSerializer):
     """Serializador explícito para los movimientos inmutables del Cardex."""
     articulo_nombre = serializers.CharField(source='id_articulo.nombre', read_only=True)
     usuario_username = serializers.CharField(source='id_usuario.username', read_only=True)
-
+    client_uuid = serializers.UUIDField(required=False, allow_null=True)
     class Meta:
         model = Cardex
         fields = [
             'id',
             'id_articulo',
+            'client_uuid',
             'articulo_nombre',
             'id_usuario',
             'usuario_username',

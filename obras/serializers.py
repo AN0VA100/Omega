@@ -44,9 +44,12 @@ class PresupuestoSerializer(serializers.ModelSerializer):
 
 
 class HojaServicioSerializer(serializers.ModelSerializer):
+
+    client_uuid = serializers.UUIDField(required=False, allow_null=True)
+
     class Meta:
         model = HojaServicio
-        fields = ['id', 'id_obra', 'fecha_servicio', 'ruta_fotografia', 'firma_canvas_base64', 'estado_firma']
+        fields = ['id', 'client_uuid', 'id_obra', 'fecha_servicio', 'ruta_fotografia', 'firma_canvas_base64', 'estado_firma']
         read_only_fields = ['id', 'fecha_servicio']
 
 

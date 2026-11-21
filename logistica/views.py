@@ -1,6 +1,7 @@
-from django.db import transaction
-from rest_framework import generics
+from django.db import transaction, IntegrityError
+from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.response import Response
 
 from .models import Articulo, Cardex
 from .serializers import ArticuloSerializer, CardexSerializer
@@ -29,7 +30,7 @@ class ArticuloDetailAPIView(generics.RetrieveUpdateAPIView):
         serializer.save()
 
 class CardexListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Cardex.objects.select_related('id_articulo', 'id_usuario').all()
+    queryset = Cardex.objects.select_related('id_articulo', 'id_usuario', 'id_obra').all()
     serializer_class = CardexSerializer
     permission_classes = [CanAccessCardex]
 
@@ -43,10 +44,15 @@ class CardexListCreateAPIView(generics.ListCreateAPIView):
         
         # Validaciones de perfil vs tipo de movimiento
         if not usuario.is_superuser:
-            if rol_actual == Rol.TECNICO and tipo != Cardex.TIPO_EGRESO:
-                raise PermissionDenied("El perfil Técnico solo puede registrar egresos de material en obra.")
-            if tipo == Cardex.TIPO_REVERSA and rol_actual != Rol.ADMIN_GENERAL:
-                raise PermissionDenied("Solo el Administrador General puede ejecutar movimientos de Reversa.")
+         if rol_actual == Rol.TECNICO:
+             if tipo != Cardex.TIPO_EGRESO:
+                 raise PermissionDenied("El perfil Técnico solo puede registrar egresos de material en obra.")
+             obra = data.get('id_obra')
+             if obra and obra.id_tecnico_id != usuario.id_usuario:
+                 raise PermissionDenied("No puede imputar materiales a una obra asignada a otro técnico.")
+
+         if tipo == Cardex.TIPO_REVERSA and rol_actual != Rol.ADMIN_GENERAL:
+             raise PermissionDenied("Solo el Administrador General puede ejecutar movimientos de Reversa.")
 
         try:
             articulo = Articulo.objects.select_for_update().get(id=data['id_articulo'].id)
@@ -82,8 +88,34 @@ class CardexListCreateAPIView(generics.ListCreateAPIView):
             valor_nuevo={
                 'id_movimiento': movimiento.id,
                 'id_articulo': articulo.id,
+                'id_obra': movimiento.id_obra_id,
                 'tipo_movimiento': tipo,
                 'cantidad': float(cantidad),
                 'stock_resultante': float(articulo.stock_disponible)
             }
         )
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        client_uuid = serializer.validated_data.get('client_uuid')
+        if client_uuid:
+            existente = Cardex.objects.select_related(
+                'id_articulo', 'id_usuario', 'id_obra'
+            ).filter(client_uuid=client_uuid).first()
+            if existente:
+                output = self.get_serializer(existente)
+                return Response(output.data, status=status.HTTP_200_OK)
+
+        try:
+            self.perform_create(serializer)
+        except IntegrityError:
+            # Respaldo ante dos reintentos simultáneos en el mismo milisegundo
+            if client_uuid:
+                existente = Cardex.objects.get(client_uuid=client_uuid)
+                return Response(self.get_serializer(existente).data, status=status.HTTP_200_OK)
+            raise
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)

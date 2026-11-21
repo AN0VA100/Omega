@@ -67,6 +67,9 @@ class Obra(models.Model):
     id_presupuesto = models.ForeignKey(Presupuesto, on_delete=models.PROTECT, null=True, blank=True)
     id_cliente = models.ForeignKey(ClienteMandante, on_delete=models.PROTECT, related_name='obras')
     id_tecnico = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    client_uuid = models.UUIDField(unique=True, null=True, blank=True, db_index=True, help_text="UUID v4 generado en dispositivo para idempotencia offline")
+
     tipo_servicio = models.CharField(max_length=100)
     estado = models.CharField(max_length=30, choices=ESTADO_CHOICES, default=ESTADO_PROCESO)
     fecha_creacion = models.DateField(auto_now_add=True)
@@ -77,6 +80,8 @@ class Obra(models.Model):
 
 class HojaServicio(models.Model):
     id = models.AutoField(primary_key=True)
+    client_uuid = models.UUIDField(unique=True, null=True, blank=True, db_index=True, help_text="UUID v4 generado en dispositivo para idempotencia offline")
+
     id_obra = models.ForeignKey(Obra, on_delete=models.CASCADE, related_name='hojas_servicio')
     fecha_servicio = models.DateTimeField(auto_now_add=True)
     

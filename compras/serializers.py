@@ -22,8 +22,8 @@ class ContactoProveedorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ContactoProveedor
-        fields = ['id', 'nombre', 'rut', 'cargo', 'email', 'telefono']
-
+        fields = ['id', 'id_proveedor', 'nombre', 'rut', 'cargo', 'email', 'telefono']
+    
 
 class ProveedorSerializer(serializers.ModelSerializer):
     contactos = ContactoProveedorSerializer(many=True, read_only=True)

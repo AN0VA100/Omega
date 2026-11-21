@@ -1,7 +1,9 @@
 """
 Vistas de Obras, Presupuestos y Terreno. Incluye la Máquina de Estados de FYAG.
 """
+from django.db import IntegrityError
 from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from .models import ClienteMandante, Presupuesto, Obra, HojaServicio, HorasTrabajadas, ContactoCliente
@@ -96,6 +98,27 @@ class HojaServicioListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = HojaServicioSerializer
     permission_classes = [CanManageTerreno]
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        client_uuid = serializer.validated_data.get('client_uuid')
+        if client_uuid:
+            existente = HojaServicio.objects.filter(client_uuid=client_uuid).first()
+            if existente:
+                return Response(self.get_serializer(existente).data, status=status.HTTP_200_OK)
+
+        try:
+            self.perform_create(serializer)
+        except IntegrityError:
+            if client_uuid:
+                existente = HojaServicio.objects.get(client_uuid=client_uuid)
+                return Response(self.get_serializer(existente).data, status=status.HTTP_200_OK)
+            raise
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
 
 class HorasTrabajadasListCreateAPIView(generics.ListCreateAPIView):
     queryset = HorasTrabajadas.objects.all().order_by('-id')
@@ -115,8 +138,12 @@ class ContactoClienteListCreateAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = ContactoCliente.objects.all().order_by('id')
         id_cliente = self.request.query_params.get('id_cliente')
-        if id_cliente:
-            queryset = queryset.filter(id_cliente=id_cliente)
+        if id_cliente is not None:
+            if not id_cliente.isdigit():
+                raise ValidationError(
+                    {"id_cliente": "El parámetro id_cliente debe ser un entero positivo."}
+                )
+            queryset = queryset.filter(id_cliente=int(id_cliente))
         return queryset
 
 

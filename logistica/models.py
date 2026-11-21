@@ -58,8 +58,9 @@ class Cardex(models.Model):
     id_articulo = models.ForeignKey(Articulo, on_delete=models.PROTECT, related_name='movimientos_cardex')
     id_usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='movimientos_bodega')
     
-    # Referencia a Obras (usamos un IntegerField o String FK temporal si la app 'obras' aún no está migrada)
-    id_obra = models.IntegerField(null=True, blank=True, help_text="ID de la Obra (Obligatorio para Egresos)")
+    client_uuid = models.UUIDField(unique=True, null=True, blank=True, db_index=True, help_text="UUID v4 generado en dispositivo para idempotencia offline")
+    
+    id_obra = models.ForeignKey('obras.Obra', on_delete=models.PROTECT, null=True, blank=True, related_name='movimientos_cardex', help_text="Obra asociada (Obligatorio para Egresos)")
     
     tipo_movimiento = models.CharField(max_length=20, choices=MOVIMIENTO_CHOICES)
     

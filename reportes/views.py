@@ -86,7 +86,7 @@ class ExportarCardexExcelAPIView(APIView):
                 float(mov.cantidad),
                 mov.precio_unitario,
                 mov.id_usuario.username,
-                mov.id_obra or "N/A"
+                mov.id_obra_id or "N/A"
             ])
 
         # Auditoría de exportación financiera
